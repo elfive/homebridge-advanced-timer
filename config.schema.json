@@ -1,0 +1,128 @@
+{
+    "pluginAlias": "advanced_timer",
+    "pluginType": "accessory",
+    "headerDisplay": "For documentation please see https://github.com/elfive/homebridge-advanced-timer",
+    "footerDisplay": "",
+    "schema": {
+        "name": {
+            "title": "Device name shows in HomeKit",
+            "description": "If autoDeviceInfo is set to true, it will overwrited with the name in your Petkit app.<br/>We don't need it, but homebridge need it.",
+            "required": true,
+            "type": "string",
+            "default": "AdvancedTimer",
+            "placeholder": "AdvancedTimer"
+        },
+        "intervals": {
+            "title": "Comma-separated trigger plan, every interval(in second) should longer than trigger_duration.",
+            "required": true,
+            "type": "string",
+            "default": "",
+            "placeholder": "5,6,7"
+        },
+        "repeat": {
+            "title": "How many trigger plan cycles repeat, -1 for infinite loop.",
+            "required": false,
+            "type": "integer",
+            "default": -1,
+            "minimum": -1,
+            "maximum": 86400
+        },
+        "enable_name": {
+            "title": "Timer enable switch name shows in HomeKit",
+            "required": false,
+            "type": "string",
+            "default": "Enable",
+            "placeholder": "Enable"
+        },
+        "trigger_name": {
+            "title": "Timer trigger indicator name shows in HomeKit.",
+            "required": false,
+            "type": "string",
+            "default": "Trigger",
+            "placeholder": "Trigger"
+        },
+        "trigger_at_start": {
+            "title": "Trigger at service start without delay.",
+            "required": false,
+            "type": "boolean",
+            "default": true
+        },
+        "status_after_restart": {
+            "title": "Enable status after Homebridge restart.",
+            "required": true,
+            "type": "integer",
+            "default": 2,
+            "placeholder": "Status before restart",
+            "oneOf": [
+                { "title": "OFF", "enum": [0] },
+                { "title": "ON", "enum": [1] },
+                { "title": "Status before restart", "enum": [2] }
+            ]
+        },
+        "trigger_duration": {
+            "title": "Each time a trigger signal last duration, in second",
+            "required": false,
+            "type": "integer",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 3
+        }
+    },
+    "form": null,
+    "display": null,
+    "layout": [
+        {
+            "ref": "basic",
+            "type": "fieldset",
+            "expandable": true,
+            "expanded": true,
+            "title": "Basic settings",
+            "items": [
+                {
+                    "type": "flex",
+                    "flex-flow": "column",
+                    "items": [
+                        "name",
+                        "intervals",
+                        "repeat"
+                    ]
+                }
+            ]
+        },
+        {
+            "ref": "service_name",
+            "type": "fieldset",
+            "expandable": true,
+            "expanded": false,
+            "title": "Service name settings",
+            "items": [
+                {
+                    "type": "flex",
+                    "flex-flow": "column",
+                    "items": [
+                        "enable_name",
+                        "trigger_name"
+                    ]
+                }
+            ]
+        },
+        {
+            "ref": "advanced_settings",
+            "type": "fieldset",
+            "expandable": true,
+            "expanded": false,
+            "title": "Advanced settings",
+            "items": [
+                {
+                    "type": "flex",
+                    "flex-flow": "column",
+                    "items": [
+                        "trigger_at_start",
+                        "status_after_restart",
+                        "trigger_duration"
+                    ]
+                }
+            ]
+        }
+    ]
+}

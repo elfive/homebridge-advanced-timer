@@ -1,0 +1,29 @@
+{
+  "name": "homebridge-advanced-timer",
+  "version": "1.0.0",
+  "description": "homebridge advanced timer, with homekit and iOS shortcut, you could do much more things.",
+  "main": "index.js",
+  "scripts": {
+    "test": "/usr/bin/homebridge -P ./ -I -U /var/lib/homebridge"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elfive/homebridge-advanced-timer.git"
+  },
+  "keywords": [
+    "timer",
+    "homebridge",
+    "homebridge-plugin"
+  ],
+  "engines": {
+    "homebridge": ">=0.4.45",
+    "node": ">=12.0.0"
+  },
+  "author": "elfive@elfive.cn",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/elfive/homebridge-advanced-timer/issues"
+  },
+  "homepage": "https://github.com/elfive/homebridge-advanced-timer#readme",
+  "dependencies": {}
+}
