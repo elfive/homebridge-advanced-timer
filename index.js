@@ -25,21 +25,21 @@ class advanced_timer_plugin {
         this.status = 0;        // timer status, 0-stopped, 1-started
         this.triggered = false; // trigger status, false-not triggered, true-triggered
         this.triggered_count = 0;
-    
-        this.log('check config usability...');
-        config = this.configCheck(config)
-        if (!config) {
-            this.log.error('config usability check failed.');
-            return;
-        }
         this.config = config;
-        this.log('config usability check passed.');
     }
 
     getServices() {
         var service_name = null;
-        this.log('begin to initialize advanced timer service.');
 
+        this.log('check config usability...');
+        config = this.configCheck(config)
+        if (!config) {
+            this.log.error('config usability check failed.');
+            return this.services;
+        }
+        this.log('config usability check passed.');
+
+        this.log('begin to initialize advanced timer service.');
         // timer enable switch service
         service_name = getConfigValue(this.config.enable_name, 'enable');               // service name
         this.enable_service = new Service.Switch(service_name, service_name);
@@ -143,10 +143,6 @@ class advanced_timer_plugin {
             return null;
         }
         config.intervals = config.intervals.split(',').map((value) => parseInt(value, 10) * 1000);
-        if (!config.intervals.every((value) => value > config.trigger_duration)) {
-            this.log.error('every interval should longer than trigger_duration(' + config.trigger_duration / 1000 + ' seconds).');
-            return null;
-        }
 
         // intervals repeat count, default -1
         if (config.repeat === undefined) {
