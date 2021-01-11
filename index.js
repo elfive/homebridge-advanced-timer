@@ -32,8 +32,8 @@ class advanced_timer_plugin {
         var service_name = null;
 
         this.log('check config usability...');
-        config = this.configCheck(config)
-        if (!config) {
+        this.config = this.configCheck(this.config)
+        if (!this.config) {
             this.log.error('config usability check failed.');
             return this.services;
         }
