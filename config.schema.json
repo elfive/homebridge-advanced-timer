@@ -14,7 +14,7 @@
         },
         "intervals": {
             "title": "Trigger Plan",
-            "description": "Comma-separated trigger plan, every interval(in second) should longer than pulse_trigger_duration.",
+            "description": "Comma-separated trigger plan, every interval(in second) should longer than Pulse Trigger Duration below.",
             "required": true,
             "type": "string",
             "default": "5,10",
@@ -110,7 +110,8 @@
             ]
         },
         "pulse_trigger_duration": {
-            "title": "Each time a trigger signal last duration, in second, only works in Pulse trigger type",
+            "title": "Pulse Trigger Duration",
+            "description": "Each time a pulse trigger signal last duration, in second, only works in Pulse trigger type",
             "required": false,
             "type": "integer",
             "default": 3,
