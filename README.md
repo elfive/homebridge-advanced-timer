@@ -4,7 +4,7 @@
       <img src="https://flat.badgen.net/npm/v/homebridge-advanced-timer" alt="NPM Version" />
     </a>
     <br>
-    <strong><a href="#2-configure">Setup Guide</a> | <a href="#4-how-to-contribute">Contribute</a> </strong>
+    <strong><a href="#2-configure">Setup Guide</a> | <a href="#3-how-to-contribute">Contribute</a> </strong>
   </p>
 
   ## 1) Description

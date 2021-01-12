@@ -109,15 +109,16 @@ class advanced_timer_plugin {
             .on('get', this.hb_get_trigger.bind(this));
         this.services.push(this.timer_trigger);
 
+        this.log(packageConfig.author.name);
         // divice information
         this.info_service = new Service.AccessoryInformation();
         this.info_service
-            .setCharacteristic(Characteristic.Identify, packageConfig['name'])
-            .setCharacteristic(Characteristic.Manufacturer, packageConfig['author'])
-            .setCharacteristic(Characteristic.Model, packageConfig['name'])
-            .setCharacteristic(Characteristic.SerialNumber, packageConfig['version'])
+            .setCharacteristic(Characteristic.Identify, packageConfig.name)
+            .setCharacteristic(Characteristic.Manufacturer, (packageConfig.author.name !== undefined ? packageConfig.author.name : "elfive@elfive.cn"))
+            .setCharacteristic(Characteristic.Model, packageConfig.name)
+            .setCharacteristic(Characteristic.SerialNumber, packageConfig.version)
             .setCharacteristic(Characteristic.Name, this.config.name)
-            .setCharacteristic(Characteristic.FirmwareRevision, packageConfig['version']);
+            .setCharacteristic(Characteristic.FirmwareRevision, packageConfig.version);
             this.services.push(this.info_service);
 
         setTimeout(() => {
@@ -137,9 +138,12 @@ class advanced_timer_plugin {
         var result = {};
         try {
             const filePath = api.user.storagePath() + '/advanced_timer.json';
-            if (!fs.existsSync(filePath)) return {};
-            const rawdata = fs.readFileSync(filePath);
-            result = JSON.parse(rawdata)[this.config.name];
+            if (fs.existsSync(filePath)) {
+                const rawdata = fs.readFileSync(filePath);
+                if (JSON.parse(rawdata)[this.config.name] !== undefined) {
+                    result = JSON.parse(rawdata)[this.config.name];
+                }
+            }
         } catch (error) {
             this.log.error('readstoragedConfigFromFile failed: ' + error);
         } finally {
@@ -154,7 +158,11 @@ class advanced_timer_plugin {
             if (fs.existsSync(filePath)) {
                 const original_data = fs.readFileSync(filePath);
                 result = JSON.parse(original_data);
-                result[this.config.name] = Object.assign(result[this.config.name], data)
+                if (result[this.config.name] !== undefined) {
+                    result[this.config.name] = Object.assign(result[this.config.name], data)
+                } else {
+                    result[this.config.name] = data;
+                }
             } else {
                 result[this.config.name] = data;
             }
