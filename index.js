@@ -75,18 +75,20 @@ class advanced_timer_plugin {
 
         // timer trigger status after start
         var init_trigger_status = false;
-        switch (this.config.trigger_status_when_start) {
-            case TRIGGER_STATUS_NOTTRIGGERED:
-                init_trigger_status = false;
+        if (this.config.trigger_type === TRIGGER_TYPE_TTL) {
+            switch (this.config.trigger_status_when_start) {
+                case TRIGGER_STATUS_NOTTRIGGERED:
+                    init_trigger_status = false;
+                    break;
+                case TRIGGER_STATUS_TRIGGERED:
+                    init_trigger_status = true;
+                    break;
+                case TRIGGER_STATUS_LASTSTATUS:
+                default:
+                    init_trigger_status =
+                        (savedConfig === undefined || savedConfig.last_trigger_status === undefined ? false : savedConfig.last_trigger_status);
                 break;
-            case TRIGGER_STATUS_TRIGGERED:
-                init_trigger_status = true;
-                break;
-            case TRIGGER_STATUS_LASTSTATUS:
-            default:
-                init_trigger_status =
-                    (savedConfig === undefined || savedConfig.last_trigger_status === undefined ? false : savedConfig.last_trigger_status);
-            break;
+            }
         }
         this.timer_triggered = init_trigger_status;
 

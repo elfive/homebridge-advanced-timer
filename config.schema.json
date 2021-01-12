@@ -17,8 +17,8 @@
             "description": "Comma-separated trigger plan, every interval(in second) should longer than pulse_trigger_duration.",
             "required": true,
             "type": "string",
-            "default": "",
-            "placeholder": "5,6,7"
+            "default": "5,10",
+            "placeholder": "5,10"
         },
         "repeat": {
             "title": "Trigger Plan Repeat Count",
@@ -59,7 +59,7 @@
         },
         "trigger_status_while_enabled": {
             "title": "Trigger Enabled Status",
-            "description": "Trigger status while service enabled.",
+            "description": "Trigger status while service enabled, only works in TTL trigger type.",
             "required": true,
             "type": "integer",
             "default": 2,
@@ -72,7 +72,7 @@
         },
         "trigger_status_while_disabled": {
             "title": "Trigger Disabled Status",
-            "description": "Trigger status while service disabled.",
+            "description": "Trigger status while service disabled, only works in TTL trigger type.",
             "required": true,
             "type": "integer",
             "default": 2,
@@ -98,7 +98,7 @@
         },
         "trigger_status_when_start": {
             "title": "Init Trigger Status",
-            "description": "Trigger status when homebridge started/restarted.",
+            "description": "Trigger status when homebridge started/restarted, only works in TTL trigger type.",
             "required": true,
             "type": "integer",
             "default": 2,
@@ -110,7 +110,7 @@
             ]
         },
         "pulse_trigger_duration": {
-            "title": "Each time a trigger signal last duration, in second, only works in pulse trigger type",
+            "title": "Each time a trigger signal last duration, in second, only works in Pulse trigger type",
             "required": false,
             "type": "integer",
             "default": 3,
