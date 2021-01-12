@@ -1,6 +1,6 @@
 {
   "name": "homebridge-advanced-timer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "homebridge advanced timer, with homekit and iOS shortcut, you could do much more things.",
   "main": "index.js",
   "scripts": {
