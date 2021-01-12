@@ -5,50 +5,87 @@
     "footerDisplay": "",
     "schema": {
         "name": {
-            "title": "Device name shows in HomeKit",
-            "description": "If autoDeviceInfo is set to true, it will overwrited with the name in your Petkit app.<br/>We don't need it, but homebridge need it.",
+            "title": "Device Name",
+            "description": "Device name shows in HomeKit",
             "required": true,
             "type": "string",
             "default": "AdvancedTimer",
             "placeholder": "AdvancedTimer"
         },
         "intervals": {
-            "title": "Comma-separated trigger plan, every interval(in second) should longer than trigger_duration.",
+            "title": "Trigger Plan",
+            "description": "Comma-separated trigger plan, every interval(in second) should longer than pulse_trigger_duration.",
             "required": true,
             "type": "string",
             "default": "",
             "placeholder": "5,6,7"
         },
         "repeat": {
-            "title": "How many trigger plan cycles repeat, -1 for infinite loop.",
+            "title": "Trigger Plan Repeat Count",
+            "description": "How many trigger plan cycles repeat, 0 for infinite loop.",
             "required": false,
             "type": "integer",
-            "default": -1,
-            "minimum": -1,
+            "default": 0,
+            "minimum": 0,
             "maximum": 86400
         },
         "enable_name": {
-            "title": "Timer enable switch name shows in HomeKit",
+            "title": "Enable Service Name",
+            "description": "Timer enable switch name shows in HomeKit",
             "required": false,
             "type": "string",
             "default": "Enable",
             "placeholder": "Enable"
         },
         "trigger_name": {
-            "title": "Timer trigger indicator name shows in HomeKit.",
+            "title": "Trigger Service Name",
+            "description": "Timer trigger indicator name shows in HomeKit.",
             "required": false,
             "type": "string",
             "default": "Trigger",
             "placeholder": "Trigger"
         },
-        "trigger_at_start": {
-            "title": "Trigger at service start without delay.",
-            "required": false,
-            "type": "boolean",
-            "default": true
+        "trigger_type": {
+            "title": "Trigger Type",
+            "description": "Trigger type can be TTL or pulse, like electronic.",
+            "required": true,
+            "type": "integer",
+            "default": 0,
+            "placeholder": "Pulse",
+            "oneOf": [
+                { "title": "Pulse", "enum": [0] },
+                { "title": "TTL", "enum": [1] }
+            ]
         },
-        "status_after_restart": {
-            "title": "Enable status after Homebridge restart.",
+        "trigger_status_while_enabled": {
+            "title": "Trigger Enabled Status",
+            "description": "Trigger status while service enabled.",
+            "required": true,
+            "type": "integer",
+            "default": 2,
+            "placeholder": "Ignored",
+            "oneOf": [
+                { "title": "Not Triggered", "enum": [0] },
+                { "title": "Triggered", "enum": [1] },
+                { "title": "Ignored", "enum": [2] }
+            ]
+        },
+        "trigger_status_while_disabled": {
+            "title": "Trigger Disabled Status",
+            "description": "Trigger status while service disabled.",
+            "required": true,
+            "type": "integer",
+            "default": 2,
+            "placeholder": "Ignored",
+            "oneOf": [
+                { "title": "Not Triggered", "enum": [0] },
+                { "title": "Triggered", "enum": [1] },
+                { "title": "Ignored", "enum": [2] }
+            ]
+        },
+        "enable_status_when_start": {
+            "title": "Init Enabled Status",
+            "description": "Enable status when homebridge started/restarted.",
             "required": true,
             "type": "integer",
             "default": 2,
@@ -59,8 +96,21 @@
                 { "title": "Status before restart", "enum": [2] }
             ]
         },
-        "trigger_duration": {
-            "title": "Each time a trigger signal last duration, in second",
+        "trigger_status_when_start": {
+            "title": "Init Trigger Status",
+            "description": "Trigger status when homebridge started/restarted.",
+            "required": true,
+            "type": "integer",
+            "default": 2,
+            "placeholder": "Status before restart",
+            "oneOf": [
+                { "title": "OFF", "enum": [0] },
+                { "title": "ON", "enum": [1] },
+                { "title": "Status before restart", "enum": [2] }
+            ]
+        },
+        "pulse_trigger_duration": {
+            "title": "Each time a trigger signal last duration, in second, only works in pulse trigger type",
             "required": false,
             "type": "integer",
             "default": 3,
@@ -117,9 +167,12 @@
                     "type": "flex",
                     "flex-flow": "column",
                     "items": [
-                        "trigger_at_start",
-                        "status_after_restart",
-                        "trigger_duration"
+                        "trigger_type",
+                        "pulse_trigger_duration",
+                        "enable_status_when_start",
+                        "trigger_status_when_start",
+                        "trigger_status_while_enabled",
+                        "trigger_status_while_disabled"
                     ]
                 }
             ]
