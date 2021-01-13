@@ -49,6 +49,8 @@
   <img src="https://raw.githubusercontent.com/elfive/homebridge-advanced-timer/master/images/trigger_mode.jpg" alt="screenshot" />
 </p>
 
+*note: trigger plan(intervals): 2,6* 
+
 
 
   ### config.json field
