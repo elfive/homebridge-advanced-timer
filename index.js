@@ -203,22 +203,22 @@ class advanced_timer_plugin {
         // trigger type, defalut 1(TRIGGER_TYPE_TTL)
         config.trigger_type = getConfigValue(config.trigger_type, TRIGGER_TYPE_TTL);
         
+        // start delay(s)
+        config.start_delay = getConfigValue(config.start_delay, 0);
+
+        // stop delay(s)
+        config.stop_delay = getConfigValue(config.stop_delay, 0);
+        
         if (config.trigger_type === TRIGGER_TYPE_PULSE) {   // trigger type: pulse
             // trigger plan
             if (!config.intervals.every((value) => value > config.pulse_trigger_duration)) {
-                this.log.error('every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration + ' seconds).');
+                this.log.error('every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration + ')');
                 return null;
             }
 
             // trigger duration(s)
             config.pulse_trigger_duration = getConfigValue(config.pulse_trigger_duration, 3);
         } else {                                            // trigger type: ttl
-            // start delay(s)
-            config.start_delay = getConfigValue(config.start_delay, 0);
-
-            // stop delay(s)
-            config.stop_delay = getConfigValue(config.stop_delay, 0);
-            
             // init enabled status: 0-disable, 1-enable, 2-last status, default 2(ENABLE_STATUS_LASTSTATUS), 
             config.enable_status_when_start = getConfigValue(config.enable_status_when_start, ENABLE_STATUS_LASTSTATUS);
             
@@ -266,7 +266,7 @@ class advanced_timer_plugin {
     async trigger_all_intervals_once() {
         for (let index = 0; index < this.config.intervals.length; index++) {
             await new Promise(resolve => {
-                this.log.debug('delay for ' + this.config.intervals[index] + " seconds.");
+                this.log.debug('delay for ' + this.config.intervals[index] + " second(s).");
                 this.timer_timeout = setTimeout(() => {
                     this.timer_timeout = null;
                     this.set_trigger_status();
