@@ -19,7 +19,7 @@ const TRIGGER_STATUS_TRIGGERED = 1;
 const TRIGGER_STATUS_IGNORED = 2;
 const TRIGGER_STATUS_LASTSTATUS = 2;
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     api = homebridge;
@@ -39,12 +39,14 @@ class advanced_timer_plugin {
         this.timer_triggered = false;   // trigger status, false-not triggered, true-triggered
         this.timer_triggered_count = 0; // triggered count
         this.timer_timeout = null;      // setTimeout return value, for clearTimeout usage
+        this.timer_start_delay_timeout = null;      // setTimeout return value, for clearTimeout usage
+        this.timer_stop_delay_timeout = null;      // setTimeout return value, for clearTimeout usage
     }
 
     getServices() {
         this.log.debug('begin to initialize advanced timer service.');
         const savedConfig = this.readStoragedConfigFromFile();
-        
+
         var service_name = null;
 
         // check config usability
@@ -85,9 +87,10 @@ class advanced_timer_plugin {
                     break;
                 case TRIGGER_STATUS_LASTSTATUS:
                 default:
-                    init_trigger_status =
-                        (savedConfig === undefined || savedConfig.last_trigger_status === undefined ? false : savedConfig.last_trigger_status);
-                break;
+                    if (savedConfig !== undefined || savedConfig.last_trigger_status !== undefined) {
+                        init_trigger_status = savedConfig.last_trigger_status
+                    };
+                    break;
             }
         }
         this.timer_triggered = init_trigger_status;
@@ -100,7 +103,7 @@ class advanced_timer_plugin {
             .on('get', this.hb_get_enable.bind(this))
             .on('set', this.hb_set_enable.bind(this));
         this.services.push(this.enable_service);
-        
+
         // timer trigger
         service_name = getConfigValue(this.config.trigger_name, 'trigger');             // service name
         this.timer_trigger = new Service.MotionSensor(service_name, service_name);
@@ -119,13 +122,13 @@ class advanced_timer_plugin {
             .setCharacteristic(Characteristic.SerialNumber, packageConfig.version)
             .setCharacteristic(Characteristic.Name, this.config.name)
             .setCharacteristic(Characteristic.FirmwareRevision, packageConfig.version);
-            this.services.push(this.info_service);
+        this.services.push(this.info_service);
 
         setTimeout(() => {
             if (init_enable_status) {
-                this.start_trigger_service();
+                this.start_trigger_service(false);
             } else {
-                this.stop_trigger_service();
+                this.stop_trigger_service(true);
             }
 
         }, 500);
@@ -152,21 +155,24 @@ class advanced_timer_plugin {
     }
 
     saveStoragedConfigToFile(data) {
-        var result = {};
-        try {
-            const filePath = api.user.storagePath() + '/advanced_timer.json';
+        var result = false;
+        const filePath = api.user.storagePath() + '/advanced_timer.json';
+        try {       // read
             if (fs.existsSync(filePath)) {
                 const original_data = fs.readFileSync(filePath);
                 result = JSON.parse(original_data);
-                if (result[this.config.name] !== undefined) {
-                    result[this.config.name] = Object.assign(result[this.config.name], data)
-                } else {
-                    result[this.config.name] = data;
-                }
+            }
+        } catch (error) {
+            this.log.error('readFileSync failed: ' + error);
+        }
+
+        try {       // write
+            if (result && result[this.config.name] !== undefined) {
+                result[this.config.name] = Object.assign(result[this.config.name], data)
             } else {
+                result = {};
                 result[this.config.name] = data;
             }
-
             const rawdata = JSON.stringify(result);
             fs.writeFileSync(filePath, rawdata);
             return true;
@@ -181,41 +187,50 @@ class advanced_timer_plugin {
         // name
         config.name = getConfigValue(config.name, 'AdvancedTimer');
 
-        // trigger duration
-        config.pulse_trigger_duration = getConfigValue(config.pulse_trigger_duration, 3) * 1000;
-
-        // trigger intervals
+        // trigger plan
         if (config.intervals === undefined) {
             this.log.error('missing config item: intervals.');
             return null;
         }
-        config.intervals = config.intervals.split(',').map((value) => parseInt(value, 10) * 1000);
-        if (config.trigger_type === TRIGGER_TYPE_PULSE &&
-            !config.intervals.every((value) => value > config.pulse_trigger_duration)) {
-            this.log.error('every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration / 1000 + ' seconds).');
-            return null;
-        }
-        
+        config.intervals = config.intervals.split(',').map((value) => parseInt(value, 10));
+
         // intervals repeat count, default 0(INFINITE)
-        if (config.repeat === undefined) {
-            this.log.debug('missing config item: repeat, using 0(infinite) instead.');
-            config.repeat = INFINITE;
-        }
+        config.repeat = getConfigValue(config.repeat, INFINITE);
 
         // service names
-        if (config.enable_name === undefined) {
-            this.log.debug('missing config item: service_names, using default name "Enable" instead.');
-            config.enable_name = 'Enable';
-        }
-        if (config.trigger_name === undefined) {
-            this.log.debug('missing config item: service_names, using default name "Trigger" instead.');
-            config.trigger_name = 'Trigger';
-        }
+        config.enable_name = getConfigValue(config.enable_name, 'Enable');
+        config.trigger_name = getConfigValue(config.trigger_name, 'Trigger');
 
-        // status after restart: 0-off, 1-on, 2-last status, default 2(ENABLE_STATUS_LASTSTATUS), 
-        if (config.enable_status_when_start === undefined) {
-            this.log.debug('missing config item: enable_status_when_start, using 2(Last statsu) instead.');
-            config.enable_status_when_start = ENABLE_STATUS_LASTSTATUS;
+        // trigger type, defalut 1(TRIGGER_TYPE_TTL)
+        config.trigger_type = getConfigValue(config.trigger_type, TRIGGER_TYPE_TTL);
+        
+        if (config.trigger_type === TRIGGER_TYPE_PULSE) {   // trigger type: pulse
+            // trigger plan
+            if (!config.intervals.every((value) => value > config.pulse_trigger_duration)) {
+                this.log.error('every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration + ' seconds).');
+                return null;
+            }
+
+            // trigger duration(s)
+            config.pulse_trigger_duration = getConfigValue(config.pulse_trigger_duration, 3);
+        } else {                                            // trigger type: ttl
+            // start delay(s)
+            config.start_delay = getConfigValue(config.start_delay, 0);
+
+            // stop delay(s)
+            config.stop_delay = getConfigValue(config.stop_delay, 0);
+            
+            // init enabled status: 0-disable, 1-enable, 2-last status, default 2(ENABLE_STATUS_LASTSTATUS), 
+            config.enable_status_when_start = getConfigValue(config.enable_status_when_start, ENABLE_STATUS_LASTSTATUS);
+            
+            // init trigger status: 0-off, 1-on, 2-last status, default 2(TRIGGER_STATUS_LASTSTATUS), 
+            config.trigger_status_when_start = getConfigValue(config.trigger_status_when_start, TRIGGER_STATUS_LASTSTATUS);
+
+            // status after enabled: 0-off, 1-on, 2-last status, default 2(TRIGGER_STATUS_LASTSTATUS), 
+            config.trigger_status_while_enabled = getConfigValue(config.trigger_status_while_enabled, TRIGGER_STATUS_LASTSTATUS);
+            
+            // status after disabled: 0-off, 1-on, 2-last status, default 2(TRIGGER_STATUS_IGNORED), 
+            config.trigger_status_while_disabled = getConfigValue(config.trigger_status_while_disabled, TRIGGER_STATUS_IGNORED);
         }
 
         return config;
@@ -234,12 +249,16 @@ class advanced_timer_plugin {
                 setTimeout(() => {
                     this.__set_trigger_status(false);
                     this.log.debug('timer triggered status: pull down');
-                }, this.config.pulse_trigger_duration);
-                this.saveStoragedConfigToFile({last_trigger_status: false});
+                }, this.config.pulse_trigger_duration * 1000);
+                this.saveStoragedConfigToFile({
+                    last_trigger_status: false
+                });
             } else {        // ttl
                 this.__set_trigger_status(!this.timer_triggered);
                 this.log.debug('timer triggered status: ' + (this.timer_triggered ? 'triggered' : 'not triggered'));
-                this.saveStoragedConfigToFile({last_trigger_status: this.timer_triggered});
+                this.saveStoragedConfigToFile({
+                    last_trigger_status: this.timer_triggered
+                });
             }
         }
     }
@@ -248,12 +267,12 @@ class advanced_timer_plugin {
     async trigger_all_intervals_once() {
         for (let index = 0; index < this.config.intervals.length; index++) {
             await new Promise(resolve => {
-                this.log.debug('delay for ' + this.config.intervals[index] / 1000 + " seconds.");
+                this.log.debug('delay for ' + this.config.intervals[index] + " seconds.");
                 this.timer_timeout = setTimeout(() => {
                     this.timer_timeout = null;
                     this.set_trigger_status();
                     resolve();
-                }, this.config.intervals[index])
+                }, this.config.intervals[index] * 1000)
             });
         }
 
@@ -263,83 +282,121 @@ class advanced_timer_plugin {
         }
     }
 
-    stop_trigger_service() {
+    stop_trigger_service(skip_delay = false) {
         this.timer_enabled = false;
         if (null !== this.timer_timeout) {
             clearTimeout(this.timer_timeout);
             this.timer_timeout = null;
         }
-        if (this.config.trigger_type === TRIGGER_TYPE_TTL) {    // ttl
-            switch (this.config.trigger_status_while_disabled) {
-                case TRIGGER_STATUS_NOTTRIGGERED:
-                    this.__set_trigger_status(false);
-                    this.log.debug("timer triggered status: not triggered");
-                    break;
-                case TRIGGER_STATUS_TRIGGERED:
-                    this.__set_trigger_status(true);
-                    this.log.debug("timer triggered status: triggered");
-                    break;
-                case TRIGGER_STATUS_IGNORED:
-                default:
-                    break;
-            }
+        if (null !== this.timer_start_delay_timeout) {
+            this.log.debug('clear last start delay process.');
+            clearTimeout(this.timer_start_delay_timeout);
+            this.timer_start_delay_timeout = null;
         }
 
-        this.saveStoragedConfigToFile({last_enable_status: this.timer_enabled, last_trigger_status: this.timer_triggered});
-        this.log('timer disabled.');
+        var set_disabled_trigger_status = () => {
+            this.timer_stop_delay_timeout = null;
+            if (this.config.trigger_type === TRIGGER_TYPE_TTL) {    // ttl
+                switch (this.config.trigger_status_while_disabled) {
+                    case TRIGGER_STATUS_NOTTRIGGERED:
+                        this.__set_trigger_status(false);
+                        this.log.debug("timer triggered status: not triggered");
+                        break;
+                    case TRIGGER_STATUS_TRIGGERED:
+                        this.__set_trigger_status(true);
+                        this.log.debug("timer triggered status: triggered");
+                        break;
+                    case TRIGGER_STATUS_IGNORED:
+                    default:
+                        break;
+                }
+            }
+        };
+
+        if (!skip_delay && this.config.stop_delay > 0) {
+            this.timer_stop_delay_timeout = setTimeout(set_disabled_trigger_status, this.config.stop_delay * 1000);
+            this.log('timer disabled, but trigger status will delay ' + this.config.stop_delay + ' second(s) to reset.');
+        } else {
+            set_disabled_trigger_status();
+            this.log('timer disabled.');
+        }
+        this.saveStoragedConfigToFile({
+            last_enable_status: this.timer_enabled,
+            last_trigger_status: this.timer_triggered
+        });
     }
 
-    start_trigger_service() {
+    start_trigger_service(skip_delay = false) {
+        if (null !== this.timer_stop_delay_timeout) {
+            this.log.debug('clear last stop delay process.');
+            clearTimeout(this.timer_stop_delay_timeout);
+            this.timer_stop_delay_timeout = null;
+        }
+
         this.timer_enabled = true;
         this.timer_triggered_count = 0;
         this.log('timer enabled.');
-        
+
         if (this.config.trigger_type === TRIGGER_TYPE_TTL) {    // ttl
+            var start_trigger_status = false;
             switch (this.config.trigger_status_while_enabled) {
                 case TRIGGER_STATUS_NOTTRIGGERED:
-                    this.__set_trigger_status(false);
-                    this.log.debug("timer triggered status: not triggered");
+                    start_trigger_status = false;
                     break;
                 case TRIGGER_STATUS_TRIGGERED:
-                    this.__set_trigger_status(true);
-                    this.log.debug("timer triggered status: triggered");
+                    start_trigger_status = true;
                     break;
-                case TRIGGER_STATUS_IGNORED:
+                case TRIGGER_STATUS_LASTSTATUS:
                 default:
+                    const savedConfig = this.readStoragedConfigFromFile();
+                    if (savedConfig !== undefined && savedConfig.last_trigger_status !== undefined) {
+                        start_trigger_status = savedConfig.last_trigger_status;
+                    }
                     break;
             }
+            this.__set_trigger_status(start_trigger_status);
+            this.log.debug("timer triggered status: " + (start_trigger_status ? 'triggered' : 'not triggered'));
         }
-        this.saveStoragedConfigToFile({last_enable_status: this.timer_enabled, last_trigger_status: this.timer_triggered});
 
-        const max_count = this.config.repeat;
+        this.saveStoragedConfigToFile({
+            last_enable_status: this.timer_enabled,
+            last_trigger_status: this.timer_triggered
+        });
+
         var trigger_function = () => {
+            this.timer_start_delay_timeout = null;
             this.trigger_all_intervals_once()
             .catch()
             .then(() => {
                 if (!this.timer_enabled) {
                     return;
-                } else if (max_count !== INFINITE && this.timer_triggered_count >= max_count) {
-                    this.stop_trigger_service();
+                } else if (this.config.repeat !== INFINITE && this.timer_triggered_count >= this.config.repeat) {
+                    this.stop_trigger_service(false);
                 } else {
                     trigger_function();
                 }
             });
         }
 
-        trigger_function();
+        if (!skip_delay && this.config.start_delay > 0) {
+            this.timer_start_delay_timeout = setTimeout(trigger_function, this.config.start_delay * 1000);
+            this.log('delay ' + this.config.start_delay + ' second(s) after timer enabled.');
+        } else {
+            trigger_function();
+        }
     }
 
     // get timer enable status
     hb_get_enable(callback) {
         callback(null, this.timer_enabled);
     }
-    
+
     // set timer enable status
     hb_set_enable(value, callback) {
         if (value) {    // enable timer
-            this.start_trigger_service();
+            this.start_trigger_service(false);
         } else if (this.timer_enabled) {    // disabled timer
-            this.stop_trigger_service();
+            this.stop_trigger_service(false);
         }
         callback(null);
     }
