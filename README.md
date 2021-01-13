@@ -82,7 +82,7 @@
           "name": "heater_timer",
           
           // trigger plan:
-          // trigger after 5min then trigger after 10min, means trigger at 5min and 15min
+          // trigger after 5s then trigger after 10s, means trigger at 5s and 15s
           "intervals": "5,10",
           
           // repeat trigger plan for 4 times
