@@ -112,7 +112,6 @@ class advanced_timer_plugin {
             .on('get', this.hb_get_trigger.bind(this));
         this.services.push(this.timer_trigger);
 
-        this.log(packageConfig.author.name);
         // divice information
         this.info_service = new Service.AccessoryInformation();
         this.info_service
