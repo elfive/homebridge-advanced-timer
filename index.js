@@ -5,34 +5,57 @@ let Service, Characteristic, api;
 const fs = require('fs');
 const packageConfig = require('./package.json')
 
+// log level
+const LOGLV_NONE = 9;
+const LOGLV_DEBUG = 1;
+const LOGLV_INFO = 2;
+const LOGLV_WARN = 3;
+const LOGLV_ERROR = 4;
+
+// repeat
 const INFINITE = 0;
 
+// trigger type
 const TRIGGER_TYPE_PULSE = 0;
 const TRIGGER_TYPE_TTL = 1;
 
+// enable status
 const ENABLE_STATUS_DISABLED = 0;
 const ENABLE_STATUS_EABLED = 1;
 const ENABLE_STATUS_LASTSTATUS = 2;
 
+// trigger status
 const TRIGGER_STATUS_NOTTRIGGERED = 0;
 const TRIGGER_STATUS_TRIGGERED = 1;
 const TRIGGER_STATUS_IGNORED = 2;
 const TRIGGER_STATUS_LASTSTATUS = 2;
 
-module.exports = function (homebridge) {
-    Service = homebridge.hap.Service;
-    Characteristic = homebridge.hap.Characteristic;
-    api = homebridge;
-    homebridge.registerAccessory('homebridge-advanced-timer', 'advanced_timer', advanced_timer_plugin);
-}
-
 function getConfigValue(original, default_value) {
     return (original !== undefined ? original : default_value);
 }
-
 class advanced_timer_plugin {
     constructor(log, config) {
-        this.log = log;
+        this.log = (level, content) => {
+            config.log_level = getConfigValue(config.log_level, LOGLV_INFO);
+            if (level < config.log_level || config.log_level === LOGLV_NONE)
+                return;
+
+            switch (level) {
+                case LOGLV_DEBUG:
+                    log('[DEBUG] ' + content);
+                    break;
+                case LOGLV_INFO:
+                    log('[INFO] ' + content);
+                    break;
+                case LOGLV_WARN:
+                    log.warn('[WARN] ' + content);
+                    break;
+                case LOGLV_ERROR:
+                default:
+                    log.error('[ERROR] ' + content);
+                    break;
+            }
+        };
         this.config = config;
         this.services = [];
         this.timer_enabled = false;     // false for disabled, true for enabled
@@ -44,19 +67,19 @@ class advanced_timer_plugin {
     }
 
     getServices() {
-        this.log.debug('begin to initialize advanced timer service.');
+        this.log(LOGLV_DEBUG, 'begin to initialize advanced timer service.');
         const savedConfig = this.readStoragedConfigFromFile();
 
         var service_name = null;
 
         // check config usability
-        this.log.debug('check config usability...');
+        this.log(LOGLV_DEBUG, 'check config usability...');
         this.config = this.configCheck(this.config)
         if (!this.config) {
-            this.log.error('config usability check failed.');
+            this.log(LOGLV_ERROR, 'config usability check failed.');
             return this.services;
         }
-        this.log.debug('config usability check passed.');
+        this.log(LOGLV_DEBUG, 'config usability check passed.');
 
         // timer enabled status after start
         var init_enable_status = false;
@@ -73,6 +96,7 @@ class advanced_timer_plugin {
                     (savedConfig === undefined || savedConfig.last_enable_status === undefined ? false : savedConfig.last_enable_status);
                 break;
         }
+        this.log(LOGLV_DEBUG, 'service started, set init enable status to: ' + (init_enable_status ? 'enabled' : 'disabled'));
         this.timer_enabled = init_enable_status;
 
         // timer trigger status after start
@@ -93,6 +117,7 @@ class advanced_timer_plugin {
                     break;
             }
         }
+        this.log(LOGLV_DEBUG, 'service started, set init trigger status to: ' + (init_trigger_status ? 'triggered' : 'not triggered'));
         this.timer_triggered = init_trigger_status;
 
         // timer enable switch service
@@ -116,7 +141,7 @@ class advanced_timer_plugin {
         this.info_service = new Service.AccessoryInformation();
         this.info_service
             .setCharacteristic(Characteristic.Identify, packageConfig.name)
-            .setCharacteristic(Characteristic.Manufacturer, (packageConfig.author.name !== undefined ? packageConfig.author.name : "elfive@elfive.cn"))
+            .setCharacteristic(Characteristic.Manufacturer, (packageConfig.author.name !== undefined ? packageConfig.author.name : 'elfive@elfive.cn'))
             .setCharacteristic(Characteristic.Model, packageConfig.name)
             .setCharacteristic(Characteristic.SerialNumber, packageConfig.version)
             .setCharacteristic(Characteristic.Name, this.config.name)
@@ -132,10 +157,14 @@ class advanced_timer_plugin {
 
         }, 500);
 
-        this.log.debug('initialize advanced timer service finished.');
+        this.log(LOGLV_DEBUG, 'initialize advanced timer service finished.');
         return this.services;
     }
 
+    log(level, content) {
+
+    }
+    
     readStoragedConfigFromFile() {
         var result = {};
         try {
@@ -147,7 +176,7 @@ class advanced_timer_plugin {
                 }
             }
         } catch (error) {
-            this.log.error('readstoragedConfigFromFile failed: ' + error);
+            this.log(LOGLV_ERROR, 'readstoragedConfigFromFile failed: ' + error);
         } finally {
             return result;
         }
@@ -162,7 +191,7 @@ class advanced_timer_plugin {
                 result = JSON.parse(original_data);
             }
         } catch (error) {
-            this.log.error('readFileSync failed: ' + error);
+            this.log(LOGLV_ERROR, 'readFileSync failed: ' + error);
         }
 
         try {       // write
@@ -176,7 +205,7 @@ class advanced_timer_plugin {
             fs.writeFileSync(filePath, rawdata);
             return true;
         } catch (error) {
-            this.log.error('saveStoragedConfigToFile failed: ' + error);
+            this.log(LOGLV_ERROR, 'saveStoragedConfigToFile failed: ' + error);
         }
     }
 
@@ -188,7 +217,7 @@ class advanced_timer_plugin {
 
         // trigger plan
         if (config.intervals === undefined) {
-            this.log.error('missing config item: intervals.');
+            this.log(LOGLV_ERROR, 'missing config item: intervals.');
             return null;
         }
         config.intervals = config.intervals.split(',').map((value) => parseInt(value, 10));
@@ -202,7 +231,7 @@ class advanced_timer_plugin {
 
         // trigger type, defalut 1(TRIGGER_TYPE_TTL)
         config.trigger_type = getConfigValue(config.trigger_type, TRIGGER_TYPE_TTL);
-        
+
         // start delay(s)
         config.start_delay = getConfigValue(config.start_delay, 0);
 
@@ -212,7 +241,7 @@ class advanced_timer_plugin {
         if (config.trigger_type === TRIGGER_TYPE_PULSE) {   // trigger type: pulse
             // trigger plan
             if (!config.intervals.every((value) => value > config.pulse_trigger_duration)) {
-                this.log.error('every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration + ')');
+                this.log(LOGLV_ERROR, 'every interval should longer than pulse_trigger_duration(' + config.pulse_trigger_duration + ')');
                 return null;
             }
 
@@ -244,17 +273,17 @@ class advanced_timer_plugin {
         if (this.timer_enabled) {
             if (this.config.trigger_type === TRIGGER_TYPE_PULSE) {    // pulse
                 this.__set_trigger_status(true);
-                this.log.debug('timer triggered status: pull up');
+                this.log(LOGLV_DEBUG, 'set triggered status to: pulse pull up');
                 setTimeout(() => {
                     this.__set_trigger_status(false);
-                    this.log.debug('timer triggered status: pull down');
+                    this.log(LOGLV_DEBUG, 'set triggered status to: pulse pull down');
                 }, this.config.pulse_trigger_duration * 1000);
                 this.saveStoragedConfigToFile({
                     last_trigger_status: false
                 });
             } else {        // ttl
                 this.__set_trigger_status(!this.timer_triggered);
-                this.log.debug('timer triggered status: ' + (this.timer_triggered ? 'triggered' : 'not triggered'));
+                this.log(LOGLV_DEBUG, 'set triggered status to: ' + (this.timer_triggered ? 'triggered' : 'not triggered'));
                 this.saveStoragedConfigToFile({
                     last_trigger_status: this.timer_triggered
                 });
@@ -266,7 +295,7 @@ class advanced_timer_plugin {
     async trigger_all_intervals_once() {
         for (let index = 0; index < this.config.intervals.length; index++) {
             await new Promise(resolve => {
-                this.log.debug('delay for ' + this.config.intervals[index] + " second(s).");
+                this.log(LOGLV_DEBUG, 'delay ' + this.config.intervals[index] + ' second(s).');
                 this.timer_timeout = setTimeout(() => {
                     this.timer_timeout = null;
                     this.set_trigger_status();
@@ -277,7 +306,7 @@ class advanced_timer_plugin {
 
         if (this.timer_enabled) {
             this.timer_triggered_count++;
-            this.log.debug('triggered count: ' + this.timer_triggered_count);
+            this.log(LOGLV_DEBUG, 'triggered count: ' + this.timer_triggered_count);
         }
     }
 
@@ -288,7 +317,7 @@ class advanced_timer_plugin {
             this.timer_timeout = null;
         }
         if (null !== this.timer_start_delay_timeout) {
-            this.log.debug('clear last start delay process.');
+            this.log(LOGLV_DEBUG, 'clear last start delay process.');
             clearTimeout(this.timer_start_delay_timeout);
             this.timer_start_delay_timeout = null;
         }
@@ -299,14 +328,15 @@ class advanced_timer_plugin {
                 switch (this.config.trigger_status_while_disabled) {
                     case TRIGGER_STATUS_NOTTRIGGERED:
                         this.__set_trigger_status(false);
-                        this.log.debug("timer triggered status: not triggered");
+                        this.log(LOGLV_DEBUG, 'service disabled, set trigger status to: not triggered.');
                         break;
                     case TRIGGER_STATUS_TRIGGERED:
                         this.__set_trigger_status(true);
-                        this.log.debug("timer triggered status: triggered");
+                        this.log(LOGLV_DEBUG, 'service disabled, set trigger status to: triggered.');
                         break;
                     case TRIGGER_STATUS_IGNORED:
                     default:
+                        this.log(LOGLV_DEBUG, 'service disabled, ignoring set trigger status.');
                         break;
                 }
             }
@@ -314,10 +344,10 @@ class advanced_timer_plugin {
 
         if (!skip_delay && this.config.stop_delay > 0) {
             this.timer_stop_delay_timeout = setTimeout(set_disabled_trigger_status, this.config.stop_delay * 1000);
-            this.log('timer disabled, but trigger status will delay ' + this.config.stop_delay + ' second(s) to reset.');
+            this.log(LOGLV_INFO, 'timer disabled, but trigger status will delay ' + this.config.stop_delay + ' second(s) to reset.');
         } else {
             set_disabled_trigger_status();
-            this.log('timer disabled.');
+            this.log(LOGLV_INFO, 'timer disabled.');
         }
         this.saveStoragedConfigToFile({
             last_enable_status: this.timer_enabled,
@@ -327,34 +357,36 @@ class advanced_timer_plugin {
 
     start_trigger_service(skip_delay = false) {
         if (null !== this.timer_stop_delay_timeout) {
-            this.log.debug('clear last stop delay process.');
+            this.log(LOGLV_DEBUG, 'clear last stop delay process.');
             clearTimeout(this.timer_stop_delay_timeout);
             this.timer_stop_delay_timeout = null;
         }
 
         this.timer_enabled = true;
         this.timer_triggered_count = 0;
-        this.log('timer enabled.');
+        this.log(LOGLV_INFO, 'timer enabled.');
 
         if (this.config.trigger_type === TRIGGER_TYPE_TTL) {    // ttl
-            var start_trigger_status = false;
             switch (this.config.trigger_status_while_enabled) {
                 case TRIGGER_STATUS_NOTTRIGGERED:
-                    start_trigger_status = false;
+                    this.__set_trigger_status(false);
+                    this.log(LOGLV_DEBUG, 'service enabled, set trigger status to: not triggered');
                     break;
                 case TRIGGER_STATUS_TRIGGERED:
-                    start_trigger_status = true;
+                    this.__set_trigger_status(true);
+                    this.log(LOGLV_DEBUG, 'service enabled, set trigger status to: triggered');
                     break;
                 case TRIGGER_STATUS_LASTSTATUS:
                 default:
+                    var start_trigger_status = false;
                     const savedConfig = this.readStoragedConfigFromFile();
                     if (savedConfig !== undefined && savedConfig.last_trigger_status !== undefined) {
                         start_trigger_status = savedConfig.last_trigger_status;
                     }
+                    this.__set_trigger_status(start_trigger_status);
+                    this.log(LOGLV_DEBUG, 'service enabled, set trigger status to last status: ' + (start_trigger_status ? 'triggered' : 'not triggered'));
                     break;
             }
-            this.__set_trigger_status(start_trigger_status);
-            this.log.debug("timer triggered status: " + (start_trigger_status ? 'triggered' : 'not triggered'));
         }
 
         this.saveStoragedConfigToFile({
@@ -379,7 +411,7 @@ class advanced_timer_plugin {
 
         if (!skip_delay && this.config.start_delay > 0) {
             this.timer_start_delay_timeout = setTimeout(trigger_function, this.config.start_delay * 1000);
-            this.log('delay ' + this.config.start_delay + ' second(s) after timer enabled.');
+            this.log(LOGLV_INFO, 'delay ' + this.config.start_delay + ' second(s) after timer enabled.');
         } else {
             trigger_function();
         }
@@ -404,4 +436,11 @@ class advanced_timer_plugin {
     hb_get_trigger(callback) {
         callback(null, this.timer_triggered);
     }
+}
+
+module.exports = function (homebridge) {
+    Service = homebridge.hap.Service;
+    Characteristic = homebridge.hap.Characteristic;
+    api = homebridge;
+    homebridge.registerAccessory('homebridge-advanced-timer', 'advanced_timer', advanced_timer_plugin);
 }

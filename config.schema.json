@@ -29,6 +29,20 @@
             "minimum": 0,
             "maximum": 86400
         },
+        "log_level": {
+            "title": "Log Level",
+            "description": "Only logs level higher than the level selected",
+            "required": true,
+            "type": "integer",
+            "default": 1,
+            "oneOf": [
+                { "title": "Debug", "enum": [1] },
+                { "title": "Info", "enum": [2] },
+                { "title": "Warn", "enum": [3] },
+                { "title": "Error", "enum": [4] },
+                { "title": "None", "enum": [9] }
+            ]
+        },
         "enable_name": {
             "title": "Enable Service Name",
             "description": "Timer enable switch name shows in HomeKit",
@@ -51,7 +65,6 @@
             "required": true,
             "type": "integer",
             "default": 0,
-            "placeholder": "Pulse",
             "oneOf": [
                 { "title": "Pulse", "enum": [0] },
                 { "title": "TTL", "enum": [1] }
@@ -90,7 +103,6 @@
             "required": true,
             "type": "integer",
             "default": 2,
-            "placeholder": "Last Status",
             "oneOf": [
                 { "title": "OFF", "enum": [0] },
                 { "title": "ON", "enum": [1] },
@@ -103,7 +115,6 @@
             "required": true,
             "type": "integer",
             "default": 2,
-            "placeholder": "Last Status",
             "oneOf": [
                 { "title": "OFF", "enum": [0] },
                 { "title": "ON", "enum": [1] },
@@ -116,7 +127,6 @@
             "required": true,
             "type": "integer",
             "default": 2,
-            "placeholder": "Last Status",
             "oneOf": [
                 { "title": "Not Triggered", "enum": [0] },
                 { "title": "Triggered", "enum": [1] },
@@ -129,7 +139,6 @@
             "required": true,
             "type": "integer",
             "default": 2,
-            "placeholder": "Ignored",
             "oneOf": [
                 { "title": "Not Triggered", "enum": [0] },
                 { "title": "Triggered", "enum": [1] },
@@ -153,7 +162,8 @@
                     "items": [
                         "name",
                         "intervals",
-                        "repeat"
+                        "repeat",
+                        "log_level"
                     ]
                 }
             ]
