@@ -1,6 +1,8 @@
 name: Node-CI
 
-on: [push, pull_request, create, publish]
+on:
+  release:
+    types: published
 
 jobs:
   build:
