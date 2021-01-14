@@ -45,6 +45,20 @@
 
 ### trigger mode
 
+- TTL
+
+    <p align="center">
+      <img src="https://raw.githubusercontent.com/elfive/homebridge-advanced-timer/master/images/ttl_timeline.jpg" alt="screenshot" />
+    </p>
+
+- Pulse
+
+    <p align="center">
+      <img src="https://raw.githubusercontent.com/elfive/homebridge-advanced-timer/master/images/pulse_timeline.jpg" alt="screenshot" />
+    </p>
+
+- Trigger status compare
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/elfive/homebridge-advanced-timer/master/images/trigger_mode.jpg" alt="screenshot" />
 </p>
@@ -59,18 +73,18 @@
 | :------------------------: | :----: | :------: | :-------------: | :---------: | ------------------------------------------------------------ |
 | accessory | string | yes | 'advanced_timer' | 'advanced_timer' | MUST BE 'advanced_timer' |
 |            name            | string |   yes    | 'AdvancedTimer' |     ---     | device name shows in HomeKit. we don't need it, but homebridge need it. |
-|         intervals          | string |   yes    |       ---       |     ---     | Comma-separated trigger plan, every interval(in second), if pulse trigger mode is selected, all interval value should longer than trigger_duration below. |
+|         intervals          | string |   yes    |       ---       |     0 to 86400<br/>(each value)     | Comma-separated trigger plan, every interval(in second), if pulse trigger mode is selected, all interval value should longer than trigger_duration below. |
 |           repeat           |  int   |   no  |       0        | 0 to 86400 | How many trigger plan cycles repeat, 0 for infinite loop.   |
 |        enable_name         | string |    no    |    'Enable'     |     ---     | Timer enable switch name shows in HomeKit                    |
 |        trigger_name        | string |    no    |    'Trigger'    |     ---     | Timer trigger indicator name shows in HomeKit.               |
 | trigger_type | int | no | 1 | 0, 1 | like electronic, trigger type has two different type:<br/>0: Pulse<br/>1: TTL |
 | pulse_trigger_duration | int | no | 3 | 1 to 3 | Each time a trigger signal last duration, in second,<br/>only works in Pulse trigger type |
-| start_delay<br/>(unit: second) | int | no | 0 | 0 to 86400 | After timer enable status set to enable, delay before trigger plan starts, only works in TTL trigger type. |
+| start_delay<br/>(unit: second) | int | no | 0 | 0 to 86400 | After timer enable status set to enable, delay before trigger plan starts. |
 | stop_delay<br/>(unit: second) | int | no | 0 | 0 to 86400 | Delay after trigger plan stops or after timer enable status set to disable, only works in TTL trigger type. |
-| enable_status_when_start | int | no | 2 | 0, 1, 2 | Enable status after Homebridge start.<br/>0: OFF,<br/>1: ON,<br/>2: Last Status. |
-| trigger_status_when_start | int | no | 2 | 0, 1, 2 | Enable status after Homebridge start.<br/>0: OFF,<br/>1: ON,<br/>2: Last Status. |
-| trigger_status_while_enabled | int | no | 0 | 0, 1, 2 | Trigger status while service enabled.<br/>0: Not Triggered,<br/>1: Triggered,<br/>2: Last Status. |
-| trigger_status_while_disabled | int | no | 0 | 0, 1, 2 | Trigger status while service disabled.<br/>0: Not Triggered,<br/>1: Triggered,<br/>2: Last Status. |
+| enable_status_when_start | int | no | 2 | 0, 1, 2 | Enable status after Homebridge start, only works in TTL trigger type.<br/>0: OFF,<br/>1: ON,<br/>2: Last Status. |
+| trigger_status_when_start | int | no | 2 | 0, 1, 2 | Enable status after Homebridge start, only works in TTL trigger type.<br/>0: OFF,<br/>1: ON,<br/>2: Last Status. |
+| trigger_status_while_enabled | int | no | 0 | 0, 1, 2 | Trigger status while service enabled, only works in TTL trigger type.<br/>0: Not Triggered,<br/>1: Triggered,<br/>2: Last Status. |
+| trigger_status_while_disabled | int | no | 0 | 0, 1, 2 | Trigger status while service disabled, only works in TTL trigger type.<br/>0: Not Triggered,<br/>1: Triggered,<br/>2: Last Status. |
 
 
 

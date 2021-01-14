@@ -197,8 +197,6 @@
                     "flex-flow": "column",
                     "items": [
                         "trigger_type",
-                        "start_delay",
-                        "stop_delay",
                         {
                             "ref": "advanced_settings_pulse",
                             "type": "fieldset",
@@ -210,6 +208,7 @@
                                     "type": "flex",
                                     "flex-flow": "column",
                                     "items": [
+                                        "start_delay",
                                         "pulse_trigger_duration"
                                     ]
                                 }
@@ -229,6 +228,8 @@
                                     "type": "flex",
                                     "flex-flow": "column",
                                     "items": [
+                                        "start_delay",
+                                        "stop_delay",
                                         "enable_status_when_start",
                                         "trigger_status_when_start",
                                         "trigger_status_while_enabled",
